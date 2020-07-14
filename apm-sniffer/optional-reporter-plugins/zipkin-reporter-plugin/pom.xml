@@ -31,11 +31,21 @@
     <groupId>org.apache.skywalking</groupId>
     <artifactId>zipkin-reporter-plugin</artifactId>
     <version>8.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
     <properties>
         <zipkin.version>5.12.3</zipkin.version>
         <zipkin.okhttp3.version>2.15.0</zipkin.okhttp3.version>
         <zipkin.reporter.brave.version>2.15.0</zipkin.reporter.brave.version>
+
+        <shade.brave.source>brave</shade.brave.source>
+        <shade.brave.target>${shade.package}.${shade.brave.source}</shade.brave.target>
+        <shade.okhttp3.source>okhttp3</shade.okhttp3.source>
+        <shade.okhttp3.target>${shade.package}.${shade.okhttp3.source}</shade.okhttp3.target>
+        <shade.zipkin2.source>zipkin2</shade.zipkin2.source>
+        <shade.zipkin2.target>${shade.package}.${shade.zipkin2.source}</shade.zipkin2.target>
+        <shade.okio.source>okio</shade.okio.source>
+        <shade.okio.target>${shade.package}.${shade.okio.source}</shade.okio.target>
     </properties>
 
     <dependencies>
@@ -70,4 +80,91 @@
             <version>${zipkin.reporter.brave.version}</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createSourcesJar>true</createSourcesJar>
+                            <shadeSourcesContent>true</shadeSourcesContent>
+                            <relocations>
+                                <relocation>
+                                    <pattern>brave</pattern>
+                                    <shadedPattern>${shade.brave.target}</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>${shade.okhttp3.source}</pattern>
+                                    <shadedPattern>${shade.okhttp3.target}</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>${shade.zipkin2.source}</pattern>
+                                    <shadedPattern>${shade.zipkin2.target}</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>${shade.okio.source}</pattern>
+                                    <shadedPattern>${shade.okio.target}</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <transformers>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <taskdef resource="net/sf/antcontrib/antcontrib.properties"
+                                         classpathref="maven.runtime.classpath"/>
+                                <if>
+                                    <equals arg1="${project.packaging}" arg2="jar"/>
+                                    <then>
+                                        <mkdir dir="${plugin.dest.dir}"/>
+                                        <copy
+                                            file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                                            tofile="${plugin.dest.dir}/${project.artifactId}-${project.version}.jar"
+                                            overwrite="true"/>
+                                    </then>
+                                </if>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>ant-contrib</groupId>
+                        <artifactId>ant-contrib</artifactId>
+                        <version>${ant-contrib.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>ant</groupId>
+                                <artifactId>ant</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.ant</groupId>
+                        <artifactId>ant-nodeps</artifactId>
+                        <version>${ant-nodeps.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
 </project>
