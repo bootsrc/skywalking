@@ -21,6 +21,7 @@ package org.apache.skywalking.apm.plugin.reporter.zipkin;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
+import brave.propagation.ThreadLocalCurrentTraceContext;
 import brave.propagation.TraceContext;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,12 +44,14 @@ public class ZipkinTracerContext implements AbstractTracerContext {
      */
     private Map<Span, ZipkinSpan> runningSpans;
     private final Tracing tracing;
+    private final ThreadLocalCurrentTraceContext currentTraceContext;
     private final Tracer tracer;
     private final CorrelationContext correlationContext;
 
-    public ZipkinTracerContext(final Tracing tracing) {
+    public ZipkinTracerContext(final Tracing tracing, final ThreadLocalCurrentTraceContext currentTraceContext) {
         this.tracing = tracing;
         this.tracer = tracing.tracer();
+        this.currentTraceContext = currentTraceContext;
         runningSpans = new ConcurrentHashMap<>();
         this.correlationContext = new CorrelationContext();
     }
@@ -127,7 +130,11 @@ public class ZipkinTracerContext implements AbstractTracerContext {
             zipkinSpan.stop();
         }
         runningSpans.remove(span);
-        return runningSpans.isEmpty();
+        boolean isContextFinished = runningSpans.isEmpty();
+        if (isContextFinished) {
+            currentTraceContext.clear();
+        }
+        return isContextFinished;
     }
 
     @Override

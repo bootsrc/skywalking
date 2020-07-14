@@ -19,28 +19,22 @@
 package org.apache.skywalking.apm.plugin.reporter.zipkin;
 
 import org.apache.skywalking.apm.agent.core.boot.OverrideImplementor;
-import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
-import org.apache.skywalking.apm.agent.core.context.AbstractTracerContext;
-import org.apache.skywalking.apm.agent.core.context.ContextManagerExtendService;
+import org.apache.skywalking.apm.agent.core.profile.ProfileTaskExecutionService;
 
 /**
- * ZipkinContextManager used Brave APIs to manage the Zipkin tracing context, including span start/stop/tag/log,
- * inject/extract in across process, and capture/continue in across thread.
+ * ProfileTaskExecutionServiceBlocker blocks the original implementation.
  */
-@OverrideImplementor(ContextManagerExtendService.class)
-public class ZipkinContextManager extends ContextManagerExtendService {
-    private ZipkinTraceReporter zipkinTraceReporter;
-
+@OverrideImplementor(ProfileTaskExecutionService.class)
+public class ProfileTaskExecutionServiceBlocker extends ProfileTaskExecutionService {
     @Override
     public void prepare() {
-        zipkinTraceReporter = ServiceManager.INSTANCE.findService(ZipkinTraceReporter.class);
     }
 
-    /**
-     * Create AbstractTracerContext with as all new Zipkin tracer.
-     */
     @Override
-    public AbstractTracerContext createTraceContext(final String operationName, final boolean forceSampling) {
-        return new ZipkinTracerContext(zipkinTraceReporter.getTracing(), zipkinTraceReporter.getCurrentTraceContext());
+    public void boot() {
+    }
+
+    @Override
+    public void shutdown() {
     }
 }

@@ -19,10 +19,11 @@
 package org.apache.skywalking.apm.plugin.reporter.zipkin;
 
 import brave.Tracing;
+import brave.propagation.CurrentTraceContext;
+import brave.propagation.ThreadLocalCurrentTraceContext;
 import lombok.Getter;
 import org.apache.skywalking.apm.agent.core.boot.OverrideImplementor;
 import org.apache.skywalking.apm.agent.core.conf.Config;
-import org.apache.skywalking.apm.agent.core.context.ContextCarrier;
 import org.apache.skywalking.apm.agent.core.remote.TraceSegmentServiceClient;
 import zipkin2.reporter.brave.AsyncZipkinSpanHandler;
 import zipkin2.reporter.okhttp3.OkHttpSender;
@@ -35,6 +36,8 @@ import zipkin2.reporter.okhttp3.OkHttpSender;
 public class ZipkinTraceReporter extends TraceSegmentServiceClient {
     @Getter
     private Tracing tracing;
+    @Getter
+    private ThreadLocalCurrentTraceContext currentTraceContext;
     private OkHttpSender sender;
     private AsyncZipkinSpanHandler zipkinSpanHandler;
 
@@ -50,9 +53,11 @@ public class ZipkinTraceReporter extends TraceSegmentServiceClient {
     public void boot() {
         sender = OkHttpSender.create(Config.Collector.BACKEND_SERVICE);
         zipkinSpanHandler = AsyncZipkinSpanHandler.create(sender);
+        currentTraceContext = (ThreadLocalCurrentTraceContext) CurrentTraceContext.Default.create();
 
         // Create a tracing component with the service name you want to see in Zipkin.
         tracing = Tracing.newBuilder()
+                         .currentTraceContext(currentTraceContext)
                          .localServiceName(Config.Agent.SERVICE_NAME)
                          .addSpanHandler(zipkinSpanHandler)
                          .build();
