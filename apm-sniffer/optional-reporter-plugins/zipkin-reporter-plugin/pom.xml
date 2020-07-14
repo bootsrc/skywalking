@@ -34,9 +34,10 @@
     <packaging>jar</packaging>
 
     <properties>
-        <zipkin.version>5.12.3</zipkin.version>
-        <zipkin.okhttp3.version>2.15.0</zipkin.okhttp3.version>
+        <zipkin.brave.version>5.12.3</zipkin.brave.version>
+        <zipkin.sender.okhttp3.version>2.15.0</zipkin.sender.okhttp3.version>
         <zipkin.reporter.brave.version>2.15.0</zipkin.reporter.brave.version>
+        <zipkin.server.version>2.21.5</zipkin.server.version>
 
         <shade.brave.source>brave</shade.brave.source>
         <shade.brave.target>${shade.package}.${shade.brave.source}</shade.brave.target>
@@ -52,32 +53,51 @@
         <dependency>
             <groupId>io.zipkin.brave</groupId>
             <artifactId>brave</artifactId>
-            <version>${zipkin.version}</version>
+            <version>${zipkin.brave.version}</version>
         </dependency>
         <dependency>
             <groupId>io.zipkin.brave</groupId>
             <artifactId>brave-instrumentation-http</artifactId>
-            <version>${zipkin.version}</version>
+            <version>${zipkin.brave.version}</version>
         </dependency>
         <dependency>
             <groupId>io.zipkin.brave</groupId>
             <artifactId>brave-instrumentation-rpc</artifactId>
-            <version>${zipkin.version}</version>
+            <version>${zipkin.brave.version}</version>
         </dependency>
         <dependency>
             <groupId>io.zipkin.brave</groupId>
             <artifactId>brave-instrumentation-messaging</artifactId>
-            <version>${zipkin.version}</version>
+            <version>${zipkin.brave.version}</version>
         </dependency>
         <dependency>
             <groupId>io.zipkin.reporter2</groupId>
             <artifactId>zipkin-sender-okhttp3</artifactId>
-            <version>${zipkin.okhttp3.version}</version>
+            <version>${zipkin.sender.okhttp3.version}</version>
         </dependency>
         <dependency>
             <groupId>io.zipkin.reporter2</groupId>
             <artifactId>zipkin-reporter-brave</artifactId>
             <version>${zipkin.reporter.brave.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.zipkin.zipkin2</groupId>
+            <artifactId>zipkin-junit</artifactId>
+            <version>${zipkin.server.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.squareup.okhttp3</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <version>3.14.9</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
