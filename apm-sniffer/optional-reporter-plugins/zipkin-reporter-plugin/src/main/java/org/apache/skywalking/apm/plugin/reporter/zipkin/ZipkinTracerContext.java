@@ -34,6 +34,12 @@ import org.apache.skywalking.apm.agent.core.context.trace.AbstractSpan;
 
 /**
  * ZipkinTracerContext is an API wrapper of Zipkin tracer.
+ *
+ * Same as SkyWalking, Zipkin traceContext is controlled automatically through stack push/pop. Once all created spans
+ * finished, the tracer context closed automatically too.
+ *
+ * Span finished means {@link #stopSpan(AbstractSpan)} called, even in async case, Zipkin span is still alive, and
+ * waiting for {@link #asyncStop(AsyncSpan)}.
  */
 public class ZipkinTracerContext implements AbstractTracerContext {
     private static String B3_NAME = "b3";
@@ -129,7 +135,7 @@ public class ZipkinTracerContext implements AbstractTracerContext {
         if (!zipkinSpan.isAsync()) {
             zipkinSpan.stop();
         }
-        runningSpans.remove(span);
+        runningSpans.remove(zipkinSpan.getSpan());
         boolean isContextFinished = runningSpans.isEmpty();
         if (isContextFinished) {
             currentTraceContext.clear();
@@ -158,8 +164,9 @@ public class ZipkinTracerContext implements AbstractTracerContext {
             zipkinSpan = new ZipkinSpan(span);
             final ZipkinSpan prevValue = runningSpans.putIfAbsent(span, zipkinSpan);
             if (prevValue != null) {
-                zipkinSpan = prevValue;
+                throw new IllegalStateException("No concurrency access for span creation");
             }
+            currentTraceContext.maybeScope(span.context());
         }
         return zipkinSpan;
     }
