@@ -19,116 +19,98 @@
 package org.apache.skywalking.apm.agent.core.context;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
-import lombok.Setter;
-import org.apache.skywalking.apm.agent.core.base64.Base64;
-import org.apache.skywalking.apm.agent.core.conf.Constants;
-import org.apache.skywalking.apm.util.StringUtil;
 
 /**
  * {@link ContextCarrier} is a data carrier of {@link TracingContext}. It holds the snapshot (current state) of {@link
  * TracingContext}.
  * <p>
  */
-@Setter
-@Getter
 public class ContextCarrier implements Serializable {
-    private String traceId;
-    private String traceSegmentId;
-    private int spanId = -1;
-    private String parentService = Constants.EMPTY_STRING;
-    private String parentServiceInstance = Constants.EMPTY_STRING;
-    private String parentEndpoint;
-    private String addressUsedAtClient;
-
+    @Getter
+    private PrimaryContext primaryContext = new PrimaryContext();
+    @Getter
     private CorrelationContext correlationContext = new CorrelationContext();
+    @Getter
     private ExtensionContext extensionContext = new ExtensionContext();
 
+    /**
+     * Additional keys for reading propagated context.
+     *
+     * <p>These context should never be used on the core and plugin codes.</p>
+     *
+     * Only highly customized core extension, such as new tracer or new tracer context should use this to re-use agent
+     * propagation mechanism.
+     */
+    private String[] customKeys;
+    /**
+     * Additional key:value(s) for propagation.
+     *
+     * <p>These context should never be used on the core and plugin codes.</p>
+     *
+     * Only highly customized core extension, such as new tracer or new tracer context should use this to re-use agent
+     * propagation mechanism.
+     */
+    private Map<String, String> customContext;
+
+    /**
+     * @return items required to propagate
+     */
     public CarrierItem items() {
-        SW8ExtensionCarrierItem sw8ExtensionCarrierItem = new SW8ExtensionCarrierItem(extensionContext, null);
-        SW8CorrelationCarrierItem sw8CorrelationCarrierItem = new SW8CorrelationCarrierItem(correlationContext, sw8ExtensionCarrierItem);
-        SW8CarrierItem sw8CarrierItem = new SW8CarrierItem(this, sw8CorrelationCarrierItem);
+        CarrierItem customItemsHead = null;
+        if (customContext != null) {
+            for (final Map.Entry<String, String> keyValuePair : customContext.entrySet()) {
+                customItemsHead = new CarrierItem(keyValuePair.getKey(), keyValuePair.getValue(), customItemsHead);
+            }
+        } else {
+            if (customKeys != null) {
+                for (final String customKey : customKeys) {
+                    customItemsHead = new CarrierItem(customKey, "", customItemsHead);
+                }
+            }
+        }
+        SW8ExtensionCarrierItem sw8ExtensionCarrierItem = new SW8ExtensionCarrierItem(
+            extensionContext, customItemsHead);
+        SW8CorrelationCarrierItem sw8CorrelationCarrierItem = new SW8CorrelationCarrierItem(
+            correlationContext, sw8ExtensionCarrierItem);
+        SW8CarrierItem sw8CarrierItem = new SW8CarrierItem(primaryContext, sw8CorrelationCarrierItem);
         return new CarrierItemHead(sw8CarrierItem);
     }
 
     /**
-     * Serialize this {@link ContextCarrier} to a {@link String}, with '|' split.
-     *
-     * @return the serialization string.
+     * Add custom key:value pair to propagate. Only work before the injection.
      */
-    String serialize(HeaderVersion version) {
-        if (this.isValid(version)) {
-            return StringUtil.join(
-                '-',
-                "1",
-                Base64.encode(this.getTraceId()),
-                Base64.encode(this.getTraceSegmentId()),
-                this.getSpanId() + "",
-                Base64.encode(this.getParentService()),
-                Base64.encode(this.getParentServiceInstance()),
-                Base64.encode(this.getParentEndpoint()),
-                Base64.encode(this.getAddressUsedAtClient())
-            );
+    public void addCustomContext(String key, String value) {
+        if (customContext == null) {
+            customContext = new HashMap<>();
         }
-        return "";
+        customContext.put(key, value);
     }
 
     /**
-     * Initialize fields with the given text.
-     *
-     * @param text carries {@link #traceSegmentId} and {@link #spanId}, with '|' split.
+     * Read propagated context. The key should be set through {@link #setCustomKeys(String...)} before read.
      */
-    ContextCarrier deserialize(String text, HeaderVersion version) {
-        if (text == null) {
-            return this;
+    public String readCustomContext(String key) {
+        if (customContext == null) {
+            return null;
+        } else {
+            return customContext.get(key);
         }
-        if (HeaderVersion.v3.equals(version)) {
-            String[] parts = text.split("-", 8);
-            if (parts.length == 8) {
-                try {
-                    // parts[0] is sample flag, always trace if header exists.
-                    this.traceId = Base64.decode2UTFString(parts[1]);
-                    this.traceSegmentId = Base64.decode2UTFString(parts[2]);
-                    this.spanId = Integer.parseInt(parts[3]);
-                    this.parentService = Base64.decode2UTFString(parts[4]);
-                    this.parentServiceInstance = Base64.decode2UTFString(parts[5]);
-                    this.parentEndpoint = Base64.decode2UTFString(parts[6]);
-                    this.addressUsedAtClient = Base64.decode2UTFString(parts[7]);
-                } catch (IllegalArgumentException ignored) {
-
-                }
-            }
-        }
-        return this;
     }
 
+    /**
+     * @return true if SkyWalking primary context is valid.
+     */
     public boolean isValid() {
-        return isValid(HeaderVersion.v3);
+        return primaryContext.isValid();
     }
 
     /**
-     * Make sure this {@link ContextCarrier} has been initialized.
-     *
-     * @return true for unbroken {@link ContextCarrier} or no-initialized. Otherwise, false;
+     * Add custom key(s) to read from propagated context(usually headers or metadata of RPC).
      */
-    boolean isValid(HeaderVersion version) {
-        if (HeaderVersion.v3 == version) {
-            return StringUtil.isNotEmpty(traceId)
-                && StringUtil.isNotEmpty(traceSegmentId)
-                && getSpanId() > -1
-                && StringUtil.isNotEmpty(parentService)
-                && StringUtil.isNotEmpty(parentServiceInstance)
-                && StringUtil.isNotEmpty(parentEndpoint)
-                && StringUtil.isNotEmpty(addressUsedAtClient);
-        }
-        return false;
-    }
-
-    public CorrelationContext getCorrelationContext() {
-        return correlationContext;
-    }
-
-    public enum HeaderVersion {
-        v3
+    public void setCustomKeys(final String... customKeys) {
+        this.customKeys = customKeys;
     }
 }

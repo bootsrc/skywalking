@@ -46,7 +46,7 @@ public class EventBusImplDeliverToHandlerInterceptor implements InstanceMethodsA
             AbstractSpan span;
             if (VertxContext.hasContext(message.replyAddress())) {
                 VertxContext context = VertxContext.peekContext(message.replyAddress());
-                span = ContextManager.createLocalSpan(context.getContextSnapshot().getParentEndpoint());
+                span = ContextManager.createLocalSpan(context.getContextSnapshot().getPrimaryContextSnapshot().getParentEndpoint());
                 ContextManager.continued(context.getContextSnapshot());
             } else {
                 span = ContextManager.createLocalSpan(message.address());

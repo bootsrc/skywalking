@@ -16,19 +16,23 @@
  *
  */
 
-package org.apache.skywalking.apm.agent.core.context;
+package org.apache.skywalking.apm.plugin.reporter.zipkin;
 
-public class SW8CarrierItem extends CarrierItem {
-    public static final String HEADER_NAME = "sw8";
-    private PrimaryContext carrier;
+import org.apache.skywalking.apm.agent.core.boot.OverrideImplementor;
+import org.apache.skywalking.apm.agent.core.remote.GRPCChannelManager;
 
-    public SW8CarrierItem(PrimaryContext carrier, CarrierItem next) {
-        super(HEADER_NAME, carrier.serialize(), next);
-        this.carrier = carrier;
+/**
+ * The {@link org.apache.skywalking.apm.agent.core.conf.Config.Collector#BACKEND_SERVICE} is used by {@link
+ * ZipkinTraceReporter}, so, this service prevents the default implementation activate the grpc channel through this
+ * parameter.
+ */
+@OverrideImplementor(GRPCChannelManager.class)
+public class GRPCBlockingService extends GRPCChannelManager {
+    @Override
+    public void prepare() {
     }
 
     @Override
-    public void setHeadValue(String headValue) {
-        carrier.deserialize(headValue);
+    public void boot() {
     }
 }

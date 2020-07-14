@@ -18,6 +18,8 @@
 
 package org.apache.skywalking.apm.agent.core.context;
 
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
 import org.apache.skywalking.apm.agent.core.context.ids.DistributedTraceId;
 
@@ -25,32 +27,48 @@ import org.apache.skywalking.apm.agent.core.context.ids.DistributedTraceId;
  * The <code>ContextSnapshot</code> is a snapshot for current context. The snapshot carries the info for building
  * reference between two segments in two thread, but have a causal relationship.
  */
-@Getter
 public class ContextSnapshot {
-    private DistributedTraceId traceId;
-    private String traceSegmentId;
-    private int spanId;
-    private String parentEndpoint;
-
+    @Getter
+    private PrimaryContextSnapshot primaryContextSnapshot;
+    @Getter
     private CorrelationContext correlationContext;
+    @Getter
     private ExtensionContext extensionContext;
 
-    ContextSnapshot(String traceSegmentId,
-                    int spanId,
-                    DistributedTraceId primaryTraceId,
-                    String parentEndpoint,
-                    CorrelationContext correlationContext,
-                    ExtensionContext extensionContext) {
-        this.traceSegmentId = traceSegmentId;
-        this.spanId = spanId;
-        this.traceId = primaryTraceId;
-        this.parentEndpoint = parentEndpoint;
+    /**
+     * Additional key:value(s) for propagation.
+     *
+     * <p>These context should never be used on the core and plugin codes.</p>
+     *
+     * Only highly customized core extension, such as new tracer or new tracer context should use this to re-use agent
+     * propagation mechanism.
+     */
+    private Map<String, Object> customContext;
+
+    /**
+     * Create standard ContextSnapshot for SkyWalking default core.
+     */
+    public ContextSnapshot(String traceSegmentId,
+                           int spanId,
+                           DistributedTraceId primaryTraceId,
+                           String parentEndpoint,
+                           CorrelationContext correlationContext,
+                           ExtensionContext extensionContext) {
+        this.primaryContextSnapshot =
+            new PrimaryContextSnapshot(primaryTraceId, traceSegmentId, spanId, parentEndpoint);
         this.correlationContext = correlationContext.clone();
         this.extensionContext = extensionContext.clone();
     }
 
+    /**
+     * Create an empty ContextSnapshot shell, for extension only.
+     */
+    public ContextSnapshot(CorrelationContext correlationContext) {
+        this.correlationContext = correlationContext.clone();
+    }
+
     public boolean isFromCurrent() {
-        return traceSegmentId != null && traceSegmentId.equals(ContextManager.capture().getTraceSegmentId());
+        return primaryContextSnapshot.isFromCurrent();
     }
 
     public CorrelationContext getCorrelationContext() {
@@ -58,6 +76,27 @@ public class ContextSnapshot {
     }
 
     public boolean isValid() {
-        return traceSegmentId != null && spanId > -1 && traceId != null;
+        return primaryContextSnapshot.isValid();
+    }
+
+    /**
+     * Add custom key:value pair to propagate. Only work in the capture stage.
+     */
+    public void addCustomContext(String key, Object value) {
+        if (customContext == null) {
+            customContext = new HashMap<>();
+        }
+        customContext.put(key, value);
+    }
+
+    /**
+     * Read cached propagated context.
+     */
+    public Object readCustomContext(String key) {
+        if (customContext == null) {
+            return null;
+        } else {
+            return customContext.get(key);
+        }
     }
 }

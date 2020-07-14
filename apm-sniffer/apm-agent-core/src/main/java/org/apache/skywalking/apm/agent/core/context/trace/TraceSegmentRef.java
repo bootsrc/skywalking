@@ -48,23 +48,23 @@ public class TraceSegmentRef {
      */
     public TraceSegmentRef(ContextCarrier carrier) {
         this.type = SegmentRefType.CROSS_PROCESS;
-        this.traceId = carrier.getTraceId();
-        this.traceSegmentId = carrier.getTraceSegmentId();
-        this.spanId = carrier.getSpanId();
-        this.parentService = carrier.getParentService();
-        this.parentServiceInstance = carrier.getParentServiceInstance();
-        this.parentEndpoint = carrier.getParentEndpoint();
-        this.addressUsedAtClient = carrier.getAddressUsedAtClient();
+        this.traceId = carrier.getPrimaryContext().getTraceId();
+        this.traceSegmentId = carrier.getPrimaryContext().getTraceSegmentId();
+        this.spanId = carrier.getPrimaryContext().getSpanId();
+        this.parentService = carrier.getPrimaryContext().getParentService();
+        this.parentServiceInstance = carrier.getPrimaryContext().getParentServiceInstance();
+        this.parentEndpoint = carrier.getPrimaryContext().getParentEndpoint();
+        this.addressUsedAtClient = carrier.getPrimaryContext().getAddressUsedAtClient();
     }
 
     public TraceSegmentRef(ContextSnapshot snapshot) {
         this.type = SegmentRefType.CROSS_THREAD;
-        this.traceId = snapshot.getTraceId().getId();
-        this.traceSegmentId = snapshot.getTraceSegmentId();
-        this.spanId = snapshot.getSpanId();
+        this.traceId = snapshot.getPrimaryContextSnapshot().getTraceId().getId();
+        this.traceSegmentId = snapshot.getPrimaryContextSnapshot().getTraceSegmentId();
+        this.spanId = snapshot.getPrimaryContextSnapshot().getSpanId();
         this.parentService = Config.Agent.SERVICE_NAME;
         this.parentServiceInstance = Config.Agent.INSTANCE_NAME;
-        this.parentEndpoint = snapshot.getParentEndpoint();
+        this.parentEndpoint = snapshot.getPrimaryContextSnapshot().getParentEndpoint();
     }
 
     public SegmentReference transform() {

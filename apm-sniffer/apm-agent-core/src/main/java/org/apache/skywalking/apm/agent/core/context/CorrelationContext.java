@@ -118,14 +118,14 @@ public class CorrelationContext {
     /**
      * Prepare for the cross-process propagation. Inject the {@link #data} into {@link ContextCarrier#getCorrelationContext()}
      */
-    void inject(ContextCarrier carrier) {
+    public void inject(ContextCarrier carrier) {
         carrier.getCorrelationContext().data.putAll(this.data);
     }
 
     /**
      * Extra the {@link ContextCarrier#getCorrelationContext()} into this context.
      */
-    void extract(ContextCarrier carrier) {
+    public void extract(ContextCarrier carrier) {
         final Map<String, String> carrierCorrelationContext = carrier.getCorrelationContext().data;
         for (Map.Entry<String, String> entry : carrierCorrelationContext.entrySet()) {
             // Only data with limited count of elements can be added

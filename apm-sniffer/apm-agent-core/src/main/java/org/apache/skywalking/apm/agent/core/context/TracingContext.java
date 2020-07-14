@@ -170,13 +170,14 @@ public class TracingContext implements AbstractTracerContext {
             throw new IllegalStateException("Exit span doesn't include meaningful peer information.");
         }
 
-        carrier.setTraceId(getReadablePrimaryTraceId());
-        carrier.setTraceSegmentId(this.segment.getTraceSegmentId());
-        carrier.setSpanId(exitSpan.getSpanId());
-        carrier.setParentService(Config.Agent.SERVICE_NAME);
-        carrier.setParentServiceInstance(Config.Agent.INSTANCE_NAME);
-        carrier.setParentEndpoint(first().getOperationName());
-        carrier.setAddressUsedAtClient(peer);
+        final PrimaryContext primaryContext = carrier.getPrimaryContext();
+        primaryContext.setTraceId(getReadablePrimaryTraceId());
+        primaryContext.setTraceSegmentId(this.segment.getTraceSegmentId());
+        primaryContext.setSpanId(exitSpan.getSpanId());
+        primaryContext.setParentService(Config.Agent.SERVICE_NAME);
+        primaryContext.setParentServiceInstance(Config.Agent.INSTANCE_NAME);
+        primaryContext.setParentEndpoint(first().getOperationName());
+        primaryContext.setAddressUsedAtClient(peer);
 
         this.correlationContext.inject(carrier);
         this.extensionContext.inject(carrier);
@@ -189,12 +190,14 @@ public class TracingContext implements AbstractTracerContext {
      */
     @Override
     public void extract(ContextCarrier carrier) {
-        TraceSegmentRef ref = new TraceSegmentRef(carrier);
-        this.segment.ref(ref);
-        this.segment.relatedGlobalTraces(new PropagatedTraceId(carrier.getTraceId()));
         AbstractSpan span = this.activeSpan();
-        if (span instanceof EntrySpan) {
-            span.ref(ref);
+        if (carrier.isValid()) {
+            TraceSegmentRef ref = new TraceSegmentRef(carrier);
+            this.segment.ref(ref);
+            this.segment.relatedGlobalTraces(new PropagatedTraceId(carrier.getPrimaryContext().getTraceId()));
+            if (span instanceof EntrySpan) {
+                span.ref(ref);
+            }
         }
 
         this.correlationContext.extract(carrier);
@@ -232,7 +235,7 @@ public class TracingContext implements AbstractTracerContext {
             TraceSegmentRef segmentRef = new TraceSegmentRef(snapshot);
             this.segment.ref(segmentRef);
             this.activeSpan().ref(segmentRef);
-            this.segment.relatedGlobalTraces(snapshot.getTraceId());
+            this.segment.relatedGlobalTraces(snapshot.getPrimaryContextSnapshot().getTraceId());
             this.correlationContext.continued(snapshot);
             this.extensionContext.continued(snapshot);
             this.extensionContext.handle(this.activeSpan());

@@ -83,9 +83,12 @@ public class ContextManager implements BootService {
         AbstractSpan span;
         AbstractTracerContext context;
         operationName = StringUtil.cut(operationName, OPERATION_NAME_THRESHOLD);
-        if (carrier != null && carrier.isValid()) {
-            SamplingService samplingService = ServiceManager.INSTANCE.findService(SamplingService.class);
-            samplingService.forceSampled();
+        if (carrier != null) {
+            if (carrier.isValid()) {
+                // If primary context exists, force sampling activated.
+                SamplingService samplingService = ServiceManager.INSTANCE.findService(SamplingService.class);
+                samplingService.forceSampled();
+            }
             context = getOrCreate(operationName, true);
             span = context.createEntrySpan(operationName);
             context.extract(carrier);
@@ -127,9 +130,7 @@ public class ContextManager implements BootService {
         if (carrier == null) {
             throw new IllegalArgumentException("ContextCarrier can't be null.");
         }
-        if (carrier.isValid()) {
-            get().extract(carrier);
-        }
+        get().extract(carrier);
     }
 
     public static ContextSnapshot capture() {

@@ -103,9 +103,9 @@ public class ContextManagerTest {
 
     @Test
     public void createMultipleEntrySpan() {
-        ContextCarrier contextCarrier = new ContextCarrier().deserialize(
-            "1-My40LjU=-MS4yLjM=-4-c2VydmljZQ==-aW5zdGFuY2U=-L2FwcA==-MTI3LjAuMC4xOjgwODA=",
-            ContextCarrier.HeaderVersion.v3
+        ContextCarrier contextCarrier = new ContextCarrier();
+        contextCarrier.getPrimaryContext().deserialize(
+            "1-My40LjU=-MS4yLjM=-4-c2VydmljZQ==-aW5zdGFuY2U=-L2FwcA==-MTI3LjAuMC4xOjgwODA="
         );
         assertTrue(contextCarrier.isValid());
 
@@ -159,8 +159,8 @@ public class ContextManagerTest {
         assertThat(logs.size(), is(1));
         assertThat(logs.get(0).getLogs().size(), is(4));
 
-        assertThat(injectContextCarrier.getSpanId(), is(1));
-        assertThat(injectContextCarrier.getAddressUsedAtClient(), is("127.0.0.1:12800"));
+        assertThat(injectContextCarrier.getPrimaryContext().getSpanId(), is(1));
+        assertThat(injectContextCarrier.getPrimaryContext().getAddressUsedAtClient(), is("127.0.0.1:12800"));
     }
 
     @Test
@@ -210,18 +210,18 @@ public class ContextManagerTest {
         assertThat(actualEntrySpan.getSpanId(), is(0));
         assertThat(AbstractTracingSpanHelper.getParentSpanId(actualEntrySpan), is(-1));
 
-        assertThat(firstExitSpanContextCarrier.getAddressUsedAtClient(), is("127.0.0.1:8080"));
-        assertThat(firstExitSpanContextCarrier.getSpanId(), is(1));
+        assertThat(firstExitSpanContextCarrier.getPrimaryContext().getAddressUsedAtClient(), is("127.0.0.1:8080"));
+        assertThat(firstExitSpanContextCarrier.getPrimaryContext().getSpanId(), is(1));
 
-        assertThat(secondExitSpanContextCarrier.getSpanId(), is(1));
+        assertThat(secondExitSpanContextCarrier.getPrimaryContext().getSpanId(), is(1));
 
     }
 
     @Test
     public void testTransform() throws InvalidProtocolBufferException {
-        ContextCarrier contextCarrier = new ContextCarrier().deserialize(
-            "1-My40LjU=-MS4yLjM=-3-c2VydmljZQ==-aW5zdGFuY2U=-L2FwcA==-MTI3LjAuMC4xOjgwODA=",
-            ContextCarrier.HeaderVersion.v3
+        ContextCarrier contextCarrier = new ContextCarrier();
+        contextCarrier.getPrimaryContext().deserialize(
+            "1-My40LjU=-MS4yLjM=-3-c2VydmljZQ==-aW5zdGFuY2U=-L2FwcA==-MTI3LjAuMC4xOjgwODA="
         );
         assertTrue(contextCarrier.isValid());
 

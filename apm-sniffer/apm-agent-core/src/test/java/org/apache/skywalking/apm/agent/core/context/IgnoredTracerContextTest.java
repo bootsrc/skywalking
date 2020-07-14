@@ -95,9 +95,9 @@ public class IgnoredTracerContextTest {
         ContextManager.stopSpan();
 
         assertThat(abstractSpan.getClass().getName(), is(NoopSpan.class.getName()));
-        assertNull(contextCarrier.getParentEndpoint());
-        assertThat(contextCarrier.getSpanId(), is(-1));
-        assertNull(contextCarrier.getAddressUsedAtClient());
+        assertNull(contextCarrier.getPrimaryContext().getParentEndpoint());
+        assertThat(contextCarrier.getPrimaryContext().getSpanId(), is(-1));
+        assertNull(contextCarrier.getPrimaryContext().getAddressUsedAtClient());
 
         LinkedList<IgnoredTracerContext> ignoredTracerContexts = storage.getIgnoredTracerContexts();
         assertThat(ignoredTracerContexts.size(), is(1));

@@ -18,17 +18,18 @@
 
 package org.apache.skywalking.apm.agent.core.context;
 
-public class SW8CarrierItem extends CarrierItem {
+public class SW8PrimaryCarrierItem extends CarrierItem {
     public static final String HEADER_NAME = "sw8";
-    private PrimaryContext carrier;
+    private final PrimaryContext primaryContext;
 
-    public SW8CarrierItem(PrimaryContext carrier, CarrierItem next) {
-        super(HEADER_NAME, carrier.serialize(), next);
-        this.carrier = carrier;
+    public SW8PrimaryCarrierItem(PrimaryContext primaryContext, CarrierItem next) {
+        super(HEADER_NAME, primaryContext.serialize(), next);
+        this.primaryContext = primaryContext;
     }
 
     @Override
     public void setHeadValue(String headValue) {
-        carrier.deserialize(headValue);
+        this.primaryContext.deserialize(headValue);
     }
+
 }
