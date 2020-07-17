@@ -22,6 +22,7 @@ import org.apache.skywalking.apm.agent.core.boot.OverrideImplementor;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
 import org.apache.skywalking.apm.agent.core.context.AbstractTracerContext;
 import org.apache.skywalking.apm.agent.core.context.ContextManagerExtendService;
+import org.apache.skywalking.apm.agent.core.remote.TraceSegmentServiceClient;
 
 /**
  * ZipkinContextManager used Brave APIs to manage the Zipkin tracing context, including span start/stop/tag/log,
@@ -33,7 +34,13 @@ public class ZipkinContextManager extends ContextManagerExtendService {
 
     @Override
     public void prepare() {
-        zipkinTraceReporter = ServiceManager.INSTANCE.findService(ZipkinTraceReporter.class);
+        zipkinTraceReporter = (ZipkinTraceReporter) ServiceManager.INSTANCE.findService(
+            TraceSegmentServiceClient.class);
+    }
+
+    @Override
+    public void shutdown() {
+        zipkinTraceReporter = null;
     }
 
     /**

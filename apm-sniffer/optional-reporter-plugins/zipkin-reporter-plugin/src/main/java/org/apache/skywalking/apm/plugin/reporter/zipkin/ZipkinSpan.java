@@ -85,6 +85,15 @@ public class ZipkinSpan implements AbstractSpan {
         return this;
     }
 
+    /**
+     * Zipkin isn't willing to accept the logs, in the meaning while in the SkyWalking plugin typically only log the
+     * error stack. The exception name has been recorded through {@link #log(Throwable)}
+     */
+    @Override
+    public AbstractSpan log(final long timestamp, final Map<String, ?> event) {
+        return this;
+    }
+
     @Override
     public AbstractSpan log(final Throwable t) {
         span.error(t);
@@ -104,11 +113,6 @@ public class ZipkinSpan implements AbstractSpan {
     @Override
     public boolean isExit() {
         return isExit;
-    }
-
-    @Override
-    public AbstractSpan log(final long timestamp, final Map<String, ?> event) {
-        return null;
     }
 
     @Override

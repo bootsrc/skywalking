@@ -68,5 +68,8 @@ public class ZipkinTraceReporter extends TraceSegmentServiceClient {
         tracing.close();
         zipkinSpanHandler.close();
         sender.close();
+
+        // This is just cleaning the current thread context, mostly for tests.
+        currentTraceContext.clear();
     }
 }

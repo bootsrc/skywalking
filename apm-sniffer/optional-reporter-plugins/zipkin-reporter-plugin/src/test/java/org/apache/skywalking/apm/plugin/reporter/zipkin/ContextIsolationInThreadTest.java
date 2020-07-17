@@ -26,25 +26,22 @@ import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 import zipkin2.Span;
 
-public class ZipkinTracerContextTest extends ZipkinTest {
+public class ContextIsolationInThreadTest extends ZipkinTest {
     @Test
-    public void testContextIsolationInThread() {
-        final ZipkinTraceReporter zipkinTraceReporter = new ZipkinTraceReporter();
-        zipkinTraceReporter.boot();
-
-        ZipkinContextManager manager = new ZipkinContextManager();
-        Whitebox.setInternalState(manager, "zipkinTraceReporter", zipkinTraceReporter);
-        final AbstractTracerContext traceContext = manager.createTraceContext("/span1", true);
+    public void test() {
+        final AbstractTracerContext traceContext = newTracerContext("/span1");
         Assert.assertTrue(traceContext instanceof ZipkinTracerContext);
 
         final AbstractSpan span1 = traceContext.createEntrySpan("span1");
+        Assert.assertTrue(span1.isEntry());
         final AbstractSpan span2 = traceContext.createLocalSpan("span2");
         final AbstractSpan span3 = traceContext.createExitSpan("span3", "127.0.0.1:8080");
+        Assert.assertTrue(span3.isExit());
         traceContext.stopSpan(span3);
         traceContext.stopSpan(span2);
         traceContext.stopSpan(span1);
 
-        List<List<Span>> traces = readTracesUntilTimeout(10);
+        List<List<Span>> traces = readTracesUntilTimeout(10, 1, 3);
         Assert.assertEquals(1, traces.size());
         List<Span> spans = traces.get(0);
         Assert.assertEquals(3, spans.size());
@@ -54,10 +51,19 @@ public class ZipkinTracerContextTest extends ZipkinTest {
         final AbstractSpan span4 = traceContext.createEntrySpan("span4");
         traceContext.stopSpan(span4);
 
-        traces = readTracesUntilTimeout(10);
+        traces = readTracesUntilTimeout(10, 2, 4);
         Assert.assertEquals(2, traces.size());
         spans = traces.get(1);
         Assert.assertEquals(1, spans.size());
         Assert.assertEquals("span4", spans.get(0).name());
+    }
+
+    private AbstractTracerContext newTracerContext(String entranceEndpoint) {
+        final ZipkinTraceReporter zipkinTraceReporter = new ZipkinTraceReporter();
+        zipkinTraceReporter.boot();
+
+        ZipkinContextManager manager = new ZipkinContextManager();
+        Whitebox.setInternalState(manager, "zipkinTraceReporter", zipkinTraceReporter);
+        return manager.createTraceContext(entranceEndpoint, true);
     }
 }

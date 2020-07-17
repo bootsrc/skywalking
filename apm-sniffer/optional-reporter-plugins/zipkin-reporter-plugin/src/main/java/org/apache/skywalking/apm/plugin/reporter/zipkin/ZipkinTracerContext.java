@@ -42,7 +42,11 @@ import org.apache.skywalking.apm.agent.core.context.trace.AbstractSpan;
  * waiting for {@link #asyncStop(AsyncSpan)}.
  */
 public class ZipkinTracerContext implements AbstractTracerContext {
-    private static String B3_NAME = "b3";
+    static String B3_ACROSS_THREAD = "B3";
+    static String B3_NAME_SPAN_ID = "X-B3-SpanId";
+    static String B3_NAME_SPAN_PARENT_SPAN_ID = "X-B3-ParentSpanId";
+    static String B3_NAME_SAMPLED = "X-B3-Sampled";
+    static String B3_NAME_TRACE_ID = "X-B3-TraceId";
 
     /**
      * Running span cache of the current Zipkin context. This takes the responsibility of determining when this context
@@ -72,8 +76,13 @@ public class ZipkinTracerContext implements AbstractTracerContext {
 
     @Override
     public void extract(final ContextCarrier carrier) {
-        carrier.setCustomKeys(B3_NAME);
-        tracing.propagation().extractor((request, key) -> carrier.readCustomContext(key)).extract(null);
+        carrier.setCustomKeys(B3_NAME_SPAN_ID);
+        carrier.setCustomKeys(B3_NAME_SPAN_PARENT_SPAN_ID);
+        carrier.setCustomKeys(B3_NAME_SAMPLED);
+        carrier.setCustomKeys(B3_NAME_TRACE_ID);
+        tracing.propagation().extractor(
+            (request, key) -> carrier.readCustomContext(key)
+        ).extract(new Object());
         this.correlationContext.extract(carrier);
     }
 
@@ -81,13 +90,13 @@ public class ZipkinTracerContext implements AbstractTracerContext {
     public ContextSnapshot capture() {
         final TraceContext traceContext = tracing.currentTraceContext().get();
         ContextSnapshot contextSnapshot = new ContextSnapshot(correlationContext);
-        contextSnapshot.addCustomContext(B3_NAME, traceContext);
+        contextSnapshot.addCustomContext(B3_ACROSS_THREAD, traceContext);
         return contextSnapshot;
     }
 
     @Override
     public void continued(final ContextSnapshot snapshot) {
-        final TraceContext traceContext = (TraceContext) snapshot.readCustomContext(B3_NAME);
+        final TraceContext traceContext = (TraceContext) snapshot.readCustomContext(B3_ACROSS_THREAD);
         tracing.currentTraceContext().newScope(traceContext);
     }
 
