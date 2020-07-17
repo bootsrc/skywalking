@@ -53,9 +53,6 @@ public class ContextIsolationInThreadTest extends ZipkinTest {
 
         traces = readTracesUntilTimeout(10, 2, 4);
         Assert.assertEquals(2, traces.size());
-        spans = traces.get(1);
-        Assert.assertEquals(1, spans.size());
-        Assert.assertEquals("span4", spans.get(0).name());
     }
 
     private AbstractTracerContext newTracerContext(String entranceEndpoint) {
