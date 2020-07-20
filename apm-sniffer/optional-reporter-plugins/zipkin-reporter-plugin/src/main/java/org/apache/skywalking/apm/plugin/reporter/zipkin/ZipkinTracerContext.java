@@ -30,6 +30,7 @@ import org.apache.skywalking.apm.agent.core.context.AsyncSpan;
 import org.apache.skywalking.apm.agent.core.context.ContextCarrier;
 import org.apache.skywalking.apm.agent.core.context.ContextSnapshot;
 import org.apache.skywalking.apm.agent.core.context.CorrelationContext;
+import org.apache.skywalking.apm.agent.core.context.PrimaryContextSnapshot;
 import org.apache.skywalking.apm.agent.core.context.trace.AbstractSpan;
 
 /**
@@ -90,6 +91,7 @@ public class ZipkinTracerContext implements AbstractTracerContext {
     public ContextSnapshot capture() {
         final TraceContext traceContext = tracing.currentTraceContext().get();
         ContextSnapshot contextSnapshot = new ContextSnapshot(correlationContext);
+        contextSnapshot.setPrimaryContextSnapshot(ZipkinMockPrimaryContextSnapshot.INSTANCE);
         contextSnapshot.addCustomContext(B3_ACROSS_THREAD, traceContext);
         return contextSnapshot;
     }
@@ -178,5 +180,26 @@ public class ZipkinTracerContext implements AbstractTracerContext {
             currentTraceContext.maybeScope(span.context());
         }
         return zipkinSpan;
+    }
+
+    /**
+     * Mock Primary Context Snapshot is just a place holder for adopting SkyWalking kernel across thread propagation.
+     */
+    private static class ZipkinMockPrimaryContextSnapshot extends PrimaryContextSnapshot {
+        private static ZipkinMockPrimaryContextSnapshot INSTANCE = new ZipkinMockPrimaryContextSnapshot();
+
+        private ZipkinMockPrimaryContextSnapshot() {
+            super(null, null, 0, null);
+        }
+
+        @Override
+        public boolean isFromCurrent() {
+            return false;
+        }
+
+        @Override
+        public boolean isValid() {
+            return true;
+        }
     }
 }

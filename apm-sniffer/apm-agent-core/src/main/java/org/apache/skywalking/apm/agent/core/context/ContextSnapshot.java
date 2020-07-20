@@ -21,6 +21,7 @@ package org.apache.skywalking.apm.agent.core.context;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.skywalking.apm.agent.core.context.ids.DistributedTraceId;
 
 /**
@@ -29,6 +30,7 @@ import org.apache.skywalking.apm.agent.core.context.ids.DistributedTraceId;
  */
 public class ContextSnapshot {
     @Getter
+    @Setter
     private PrimaryContextSnapshot primaryContextSnapshot;
     @Getter
     private CorrelationContext correlationContext;
